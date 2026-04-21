@@ -1,6 +1,9 @@
 import MetaTrader5 as mt5
 from typing import Dict, Optional
 
+    # -----------------------------
+    # Implemented as MT5 documentation suggested, Error warnings is not related
+    # -----------------------------
 
 class MT5Bridge:
     def __init__(self, login=None, password=None, server=None):
@@ -33,7 +36,7 @@ class MT5Bridge:
     # -----------------------------
     # Market Data
     # -----------------------------
-    def get_rates(self, symbol: str, timeframe, n: int = 200) -> Optional[Dict]:
+    def get_rates(self, symbol: str, timeframe, n: int = 180) -> Optional[Dict]:
         rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, n)
         if rates is None:
             return None

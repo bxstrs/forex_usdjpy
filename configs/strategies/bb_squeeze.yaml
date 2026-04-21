@@ -1,6 +1,7 @@
 bb_period: 25
 bb_dev: 1
 bw_ma_period: 150
+atr_period: 20
 
 constant: 1
 adaptive_constant: 0.8
