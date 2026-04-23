@@ -1,8 +1,9 @@
+'''src/config/loader.py'''
 import yaml
 from pathlib import Path
 
 
-BASE_CONFIG_PATH = Path("configs")
+BASE_CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "configs"
 
 
 def load_yaml(relative_path: str) -> dict:

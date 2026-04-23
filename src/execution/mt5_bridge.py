@@ -71,7 +71,7 @@ class MT5Bridge:
             direction: str, 
             volume: float,
             magic: int = 999999,
-            comment: str = "foreward_test"
+            comment: str = "forward_test"
         ):
 
         tick = self.get_tick(symbol)

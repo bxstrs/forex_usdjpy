@@ -1,8 +1,5 @@
 ﻿"""
-Core data structures for the trading system.
-
-These classes are simple data containers with no business logic.
-Use them across all modules for type safety and consistency.
+src/core/types.py
 """
 
 from dataclasses import dataclass

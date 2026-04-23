@@ -1,6 +1,7 @@
 '''src/execution/converter.py'''
 import MetaTrader5 as mt5
 from src.core.types import Trade, Direction
+from datetime import datetime, timezone
 
 
 def convert_position_to_trade(pos) -> Trade:
@@ -18,7 +19,7 @@ def convert_position_to_trade(pos) -> Trade:
         entry_price=pos.price_open,
         exit_price=None,
         volume=pos.volume,
-        entry_time=pos.time,
+        entry_time=datetime.fromtimestamp(pos.time, tz=timezone.utc),
         exit_time=None,
         net_pnl=pos.profit
     )

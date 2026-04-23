@@ -64,6 +64,8 @@ def warmup_strategy(strategy, history):
 
         strategy.on_new_bar(sub_history)
 
+    strategy._last_bar_time = history["timestamp"][-1]
+
 # =========================
 # Entry Logic
 # =========================
@@ -77,6 +79,9 @@ def try_entry(
     current_bar_time,
     last_entry_bar_time
 ):
+    # prevent risk rule breach
+    if not position_manager.can_trade():
+        return False, last_entry_bar_time
 
     # prevent same bar entry
     if last_entry_bar_time == current_bar_time:

@@ -12,7 +12,7 @@ from src.utils.logger import log
 
 class BBSqueezeStrategy(Strategy):
     def __init__(self,config: BBSqueezeConfig):
-        self.config = config
+        super().__init__(config)
         self.strategy_id = self.__class__.__name__
 
         # adaptive state
