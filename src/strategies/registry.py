@@ -7,6 +7,6 @@ STRATEGY_REGISTRY = {
     "bb_squeeze": {
         "strategy_class": BBSqueeze,
         "config_class": BBSqueezeConfig,
-        "config_path": "strategies/bb_squeeze.yaml",
+        "config_path": "bb_squeeze/constant.yaml",
     }
 }

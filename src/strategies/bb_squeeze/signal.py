@@ -18,7 +18,9 @@ class BBSqueeze(Strategy):
         self._last_trade_was_loss = False
 
         self._last_exit_bar_time = None # Data of exit time and holding period
+
         self._current_bar_time = None
+        
         self._last_signal_setup_time = None # State of used candle
 
         self.indicators = IncrementalVolatility(
@@ -39,12 +41,11 @@ class BBSqueeze(Strategy):
         if len(closes) < 2:
             return
 
-        close = closes[-1]
-        high = highs[-1]
-        low = lows[-1]
-        prev_close = closes[-2]
+        close = closes[-2]
+        high = highs[-2]
+        low = lows[-2]
 
-        self.indicators.update(close, high, low, prev_close)
+        self.indicators.update(close, high, low)
 
         # update bandwidth MA
         bw = self.indicators.get_bandwidth()
@@ -94,13 +95,16 @@ class BBSqueeze(Strategy):
         opens = history["open"]
 
         # previous candle
-        open1 = opens[-2]
-        close1 = closes[-2]
-        high1 = highs[-2]
-        low1 = lows[-2]
+        open2 = opens[-2]
+        close2 = closes[-2]
+        high2 = highs[-2]
+        low2 = lows[-2]
+
+        high1 = highs[-1]
+        low1 = lows[1]
 
     # ===== USE INCREMENTAL VALUES =====
-        prev_upper, prev_lower, _ = self.indicators.get_previous_bollinger_bands()
+        prev_upper, prev_lower, _ = self.indicators.get_bollinger_bands()
 
         # early BB = None prevention
         if prev_upper is None or prev_lower is None:
@@ -124,20 +128,20 @@ class BBSqueeze(Strategy):
 
         # adaptive filter
         if self._last_trade_was_loss:
-            if abs(close1 - open1) <= self.config.adaptive_constant * atr_value:
+            if abs(close2 - open2) <= self.config.adaptive_constant * atr_value:
                 return None
 
         # invalid candle
         valid_candle = not (
-            (open1 > prev_upper and close1 < prev_upper)
-            or (open1 < prev_lower and close1 > prev_lower)
+            (open2 > prev_upper and close2 < prev_upper)
+            or (open2 < prev_lower and close2 > prev_lower)
         )
 
         # -----------------------------
         # BUY
         # -----------------------------
-        if  high1 >= prev_upper and close1 > prev_upper and valid_candle:
-            if market_state.ask and market_state.ask > high1 + 0.1 * atr_value:
+        if  high2 >= prev_upper and close2 > prev_upper and valid_candle:
+            if market_state.ask and high1 > high2 + 0.1 * atr_value:
                 self._last_signal_setup_time = setup_bar_time  # consume setup candle
                 return Signal(
                     signal_id=f"{market_state.timestamp}_BUY",
@@ -152,8 +156,8 @@ class BBSqueeze(Strategy):
         # -----------------------------
         # SELL
         # -----------------------------
-        if low1 <= prev_lower and close1 < prev_lower and valid_candle:
-            if market_state.bid and market_state.bid < low1 - 0.1 * atr_value:
+        if low2 <= prev_lower and close2 < prev_lower and valid_candle:
+            if market_state.bid and low1 < low2 - 0.1 * atr_value:
                 self._last_signal_setup_time = setup_bar_time  # consume setup candle
                 return Signal(
                     signal_id=f"{market_state.timestamp}_SELL",

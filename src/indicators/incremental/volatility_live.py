@@ -22,10 +22,6 @@ class IncrementalVolatility:
         self._tr_sum = 0.0
         
         # Cached results
-        self._prev_bb_upper: Optional[float] = None
-        self._prev_bb_lower: Optional[float] = None
-        self._prev_bb_middle: Optional[float] = None
-
         self._bb_upper: Optional[float] = None
         self._bb_lower: Optional[float] = None
         self._bb_middle: Optional[float] = None
@@ -37,7 +33,6 @@ class IncrementalVolatility:
         close: float,
         high: float,
         low: float,
-        prev_close: Optional[float] = None
     ) -> None:
         """
         Update with new tick data.
@@ -54,29 +49,24 @@ class IncrementalVolatility:
         self._sum_sq += close * close
 
         # ===== TRUE RANGE UPDATE =====
-        if prev_close is not None:
-            tr = max(
-                high - low,
-                abs(high - prev_close),
-                abs(low - prev_close),
-            )
+        tr = max(
+            high - low,
+            abs(high - close),
+            abs(low - close),
+        )
 
-            if len(self.tr_values) == self.atr_period:
-                old_tr = self.tr_values.popleft()
-                self._tr_sum -= old_tr
+        if len(self.tr_values) == self.atr_period:
+            old_tr = self.tr_values.popleft()
+            self._tr_sum -= old_tr
 
-            self.tr_values.append(tr)
-            self._tr_sum += tr
+        self.tr_values.append(tr)
+        self._tr_sum += tr
         
         # ===== RECALCULATE (O(1)) =====
         self._recalculate()
     
     def _recalculate(self) -> None:
         """Recalculate BB and ATR using running sums."""
-        
-        self._prev_bb_upper = self._bb_upper
-        self._prev_bb_lower = self._bb_lower
-        self._prev_bb_middle = self._bb_middle
 
         # ---- Bollinger Bands ----
         n = len(self.closes)
@@ -105,9 +95,6 @@ class IncrementalVolatility:
 
     def get_bollinger_bands(self) -> Tuple[Optional[float], Optional[float], Optional[float]]:
         return self._bb_upper, self._bb_lower, self._bb_middle
-    
-    def get_previous_bollinger_bands(self):
-        return self._prev_bb_upper, self._prev_bb_lower, self._prev_bb_middle
 
     def get_atr(self) -> float:
         return self._atr
