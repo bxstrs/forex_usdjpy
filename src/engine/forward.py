@@ -24,7 +24,7 @@ RATE_FETCH_INTERVAL = 1  # fetch full history every N ticks (reduce redundant ca
 # ============================================================================
 
 def fetch_data(bridge):
-    history = bridge.get_rates(SYMBOL, TIMEFRAME, 120)
+    history = bridge.get_rates(SYMBOL, TIMEFRAME, 180)
     tick = bridge.get_tick(SYMBOL)
 
     if history is None or tick is None:

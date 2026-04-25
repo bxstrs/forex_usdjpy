@@ -16,23 +16,21 @@ class BBSqueeze(Strategy):
 
         # adaptive state
         self._last_trade_was_loss = False
-        self._near_breakout_logged = False
 
         self._last_exit_bar_time = None # Data of exit time and holding period
         self._current_bar_time = None
         self._last_signal_setup_time = None # State of used candle
 
-        self.vol = IncrementalVolatility(
+        self.indicators = IncrementalVolatility(
             bb_period=config.bb_period,
             bb_dev=config.bb_dev,
             atr_period=config.atr_period,
         )
 
-        self.bw_ma = BandwidthMACalculator(
+        self.bandwidth_ma = BandwidthMACalculator(
             bw_ma_period=config.bw_ma_period
         )
 
-    # SEEM TO WORK CORRECTLY
     def on_new_bar(self, history: dict):  
         closes = history["close"]
         highs = history["high"]
@@ -46,11 +44,11 @@ class BBSqueeze(Strategy):
         low = lows[-1]
         prev_close = closes[-2]
 
-        self.vol.update(close, high, low, prev_close)
+        self.indicators.update(close, high, low, prev_close)
 
         # update bandwidth MA
-        bw = self.vol.get_bandwidth()
-        self.bw_ma.update(bw)
+        bw = self.indicators.get_bandwidth()
+        self.bandwidth_ma.update(bw)
 
 
     # -----------------------------
@@ -72,20 +70,22 @@ class BBSqueeze(Strategy):
                 level="INFO"
             ) 
             self.on_new_bar(history)
-            self._current_bar_time = current_bar_time # -> WORKING ✅
+            self._current_bar_time = current_bar_time 
         
-        # readiness check
-        if not (self.vol.is_ready() and self.bw_ma.is_ready()):
-            return None # -> INDICATOR PREP IS NOT WORKING
+        if not (self.indicators.is_ready() and self.bandwidth_ma.is_ready()):
+            log(f"[FILTERED] indicators: {self.indicators.is_ready()}, bw_ma: {self.bandwidth_ma.is_ready()}")
+            return None 
 
-        # Prevent same bar re-entry -> WORKING ✅
         if self._last_exit_bar_time == self._current_bar_time:
+            log("[FILTERED] same bar re-entry")
             return None
         
         if setup_bar_time == self._last_signal_setup_time:
+            log("[FILTERED] this setup candle was already used")
             return None
 
         if spread > self.config.max_spread:
+            log(f"[FILTERED] spread too high: {spread}")
             return None
         
         closes = history["close"]
@@ -100,30 +100,20 @@ class BBSqueeze(Strategy):
         low1 = lows[-2]
 
     # ===== USE INCREMENTAL VALUES =====
-        prev_upper, prev_lower, _ = self.vol.get_previous_bollinger_bands()
+        prev_upper, prev_lower, _ = self.indicators.get_previous_bollinger_bands()
 
         # early BB = None prevention
         if prev_upper is None or prev_lower is None:
             return None
         
-        atr_value = self.vol.get_atr()
+        atr_value = self.indicators.get_atr()
 
         # early ATR = 0 prevention
         if atr_value == 0:
             return None
         
-        bw = self.vol.get_bandwidth()
-        bw_ma = self.bw_ma.get_bandwidth_ma()
-
-        if close1 > prev_upper * 0.98 or close1 < prev_lower * 0.98:
-            if not self._near_breakout_logged:
-                log(
-                    f"[NEAR BREAKOUT] close={close1:.5f}, upper={prev_upper}, lower={prev_lower}, "
-                    f"bw={bw:.6f}, bw_ma={bw_ma:.6f}", level="INFO"
-                )
-                self._near_breakout_logged = True
-        else:
-            self._near_breakout_logged = False
+        bw = self.indicators.get_bandwidth()
+        bw_ma = self.bandwidth_ma.get_bandwidth_ma()
 
         if bw_ma == 0:
             return None
@@ -146,7 +136,7 @@ class BBSqueeze(Strategy):
         # -----------------------------
         # BUY
         # -----------------------------
-        if close1 > prev_upper and valid_candle:
+        if  high1 >= prev_upper and close1 > prev_upper and valid_candle:
             if market_state.ask and market_state.ask > high1 + 0.1 * atr_value:
                 self._last_signal_setup_time = setup_bar_time  # consume setup candle
                 return Signal(
@@ -162,7 +152,7 @@ class BBSqueeze(Strategy):
         # -----------------------------
         # SELL
         # -----------------------------
-        if close1 < prev_lower and valid_candle:
+        if low1 <= prev_lower and close1 < prev_lower and valid_candle:
             if market_state.bid and market_state.bid < low1 - 0.1 * atr_value:
                 self._last_signal_setup_time = setup_bar_time  # consume setup candle
                 return Signal(
@@ -181,7 +171,7 @@ class BBSqueeze(Strategy):
     # Exit logic (returns True/False)
     # -----------------------------
     def check_exit(self, trade, market_state, closes) -> bool:
-        upper, lower, middle = self.vol.get_bollinger_bands()
+        upper, lower, middle = self.indicators.get_bollinger_bands()
         # not ready → no exit
         if upper is None or lower is None:
             return False
