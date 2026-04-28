@@ -14,7 +14,7 @@ from src.execution.position_manager import PositionManager
 # ============================================================================
 
 SYMBOL = "ETHUSD#"
-TIMEFRAME = mt5.TIMEFRAME_M1
+TIMEFRAME = mt5.TIMEFRAME_H4
 STR_TIMEFRAME = "4h"
 
 TICK_SLEEP = 0.1  # seconds (100ms = ~10 ticks/sec)

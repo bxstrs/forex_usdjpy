@@ -1,17 +1,21 @@
 '''src/execution/mt5_bridge.py'''
+import os
 import MetaTrader5 as mt5
 from typing import Dict, Optional
-
+from dotenv import load_dotenv
     # -----------------------------
     # Implemented as MT5 documentation suggested, Error warnings is not related
     # -----------------------------
 
+load_dotenv()
+
 class MT5Bridge:
     def __init__(self, login=None, password=None, server=None):
         self.connected = False
-        self.login = 316933522
-        self.password = "Saipeah2004/"
-        self.server = "XMGlobal-MT5 7"
+
+        self.login = login or int(os.getenv("MT5_LOGIN", 0))
+        self.password = password or os.getenv("MT5_PASSWORD")
+        self.server = server or os.getenv("MT5_SERVER")
 
     # -----------------------------
     # Connection
@@ -27,7 +31,8 @@ class MT5Bridge:
             self.connected = mt5.initialize()
 
         if not self.connected:
-            print("MT5 init failed:", mt5.last_error())
+            error = mt5.last_error()
+            raise RuntimeError(f"MT5 init failed: {error}")
         return self.connected
 
     def shutdown(self):
@@ -136,3 +141,6 @@ class MT5Bridge:
     # -----------------------------
     def get_positions(self, symbol: str):
         return mt5.positions_get(symbol=symbol)
+    
+    def history_deals_get(self, ticket):
+        return mt5.history_deals_get(ticket=ticket)

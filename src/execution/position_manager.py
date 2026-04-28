@@ -100,9 +100,12 @@ class PositionManager:
                 )
                 log(f"[EXIT SIGNAL] {trade.direction} at {exit_price}", level="SIGNAL")
 
-                result =self.bridge.close_position(pos)
+                result = self.bridge.close_position(pos)
                 actual_exit_price = result.price if result and result.retcode == mt5.TRADE_RETCODE_DONE else market_state.bid
-                actual_pnl = result.profit if result and hasattr(result, "profit") else None
+
+                deal_ticket = result.deal
+                deals = self.bridge.history_deals_get(ticket=deal_ticket)
+                actual_pnl = deals[0].profit if deals else None
 
                 datalogger.log_trade(
                     ts=market_state.timestamp,
